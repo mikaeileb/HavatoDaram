@@ -79,20 +79,24 @@ jobs:
       - name: Force launcher icon in Android manifest
         run: |
           python3 - <<'PY'
-          import xml.etree.ElementTree as ET
+          import re
           p = 'android/app/src/main/AndroidManifest.xml'
-          tree = ET.parse(p)
-          root = tree.getroot()
-          ns = '{http://schemas.android.com/apk/res/android}'
-          app = root.find('application')
-          if app is None:
-              raise SystemExit('Android application tag not found')
-          app.set(ns + 'icon', '@mipmap/ic_launcher')
-          app.set(ns + 'roundIcon', '@mipmap/ic_launcher_round')
-          tree.write(p, encoding='utf-8', xml_declaration=True)
-          print('Launcher icon configured:', app.get(ns+'icon'), app.get(ns+'roundIcon'))
+          with open(p, encoding='utf-8') as f:
+              manifest = f.read()
+          if 'android:icon=' in manifest:
+              manifest = re.sub(r'android:icon="[^"]*"', 'android:icon="@mipmap/ic_launcher"', manifest, count=1)
+          else:
+              manifest = re.sub(r'<application\\b', '<application android:icon="@mipmap/ic_launcher"', manifest, count=1)
+          if 'android:roundIcon=' in manifest:
+              manifest = re.sub(r'android:roundIcon="[^"]*"', 'android:roundIcon="@mipmap/ic_launcher_round"', manifest, count=1)
+          else:
+              manifest = re.sub(r'<application\\b', '<application android:roundIcon="@mipmap/ic_launcher_round"', manifest, count=1)
+          if 'android:icon="@mipmap/ic_launcher"' not in manifest or 'android:roundIcon="@mipmap/ic_launcher_round"' not in manifest:
+              raise SystemExit('Could not configure launcher icon attributes')
+          with open(p, 'w', encoding='utf-8') as f:
+              f.write(manifest)
+          print('Launcher icon attributes configured without rewriting XML namespaces')
           PY
-          grep -n 'application' android/app/src/main/AndroidManifest.xml
       - name: Sync Capacitor
         run: npx cap sync android
       - name: Build debug APK
