@@ -1,0 +1,63 @@
+name: Build Android APK
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install Capacitor
+        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 sharp@0.33.5
+      - name: Prepare web app
+        run: |
+          mkdir -p www
+          cp index.html app.js styles.css www/
+          cp -R assets www/assets
+      - name: Generate Android project
+        run: npx cap add android
+      - name: Apply app icon
+        run: |
+          node - <<'NODE'
+          const sharp = require('sharp');
+          const fs = require('fs');
+          const path = require('path');
+          const svg = fs.readFileSync('assets/icon.svg');
+          const sizes = { 'mdpi':48, 'hdpi':72, 'xhdpi':96, 'xxhdpi':144, 'xxxhdpi':192 };
+          (async()=>{
+            for (const [density,size] of Object.entries(sizes)) {
+              const dir = path.join('android/app/src/main/res', 'mipmap-'+density);
+              fs.mkdirSync(dir,{recursive:true});
+              await sharp(svg).resize(size,size).png().toFile(path.join(dir,'ic_launcher.png'));
+              await sharp(svg).resize(size,size).png().toFile(path.join(dir,'ic_launcher_round.png'));
+            }
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - name: Sync Capacitor
+        run: npx cap sync android
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - name: Publish APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HavatoDaram-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
