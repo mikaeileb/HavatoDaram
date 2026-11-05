@@ -49,6 +49,33 @@ jobs:
             }
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
+      - name: Create Android adaptive launcher icons
+        run: |
+          mkdir -p android/app/src/main/res/drawable-nodpi
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
+          mkdir -p android/app/src/main/res/values
+          node - <<'NODE'
+          const sharp = require('sharp');
+          const fs = require('fs');
+          (async()=>{
+            const svg = fs.readFileSync('assets/icon.svg');
+            await sharp(svg).resize(432,432).png().toFile('android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/launcher_icon_background"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          cat > android/app/src/main/res/values/launcher_icon_background.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="launcher_icon_background">#124D75</color>
+          </resources>
+          EOF
       - name: Sync Capacitor
         run: npx cap sync android
       - name: Build debug APK
