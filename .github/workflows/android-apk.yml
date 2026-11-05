@@ -21,6 +21,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: Initialize npm project
+        run: npm init -y
       - name: Install Capacitor
         run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 sharp@0.33.5
       - name: Prepare web app
