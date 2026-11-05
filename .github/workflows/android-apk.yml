@@ -32,6 +32,8 @@ jobs:
           cp -R assets www/assets
       - name: Generate Android project
         run: npx cap add android
+      - name: Sync Capacitor
+        run: npx cap sync android
       - name: Apply app icon
         run: |
           node - <<'NODE'
@@ -86,19 +88,17 @@ jobs:
           if 'android:icon=' in manifest:
               manifest = re.sub(r'android:icon="[^"]*"', 'android:icon="@mipmap/ic_launcher"', manifest, count=1)
           else:
-              manifest = re.sub(r'<application\\b', '<application android:icon="@mipmap/ic_launcher"', manifest, count=1)
+              manifest = re.sub(r'<application\b', '<application android:icon="@mipmap/ic_launcher"', manifest, count=1)
           if 'android:roundIcon=' in manifest:
               manifest = re.sub(r'android:roundIcon="[^"]*"', 'android:roundIcon="@mipmap/ic_launcher_round"', manifest, count=1)
           else:
-              manifest = re.sub(r'<application\\b', '<application android:roundIcon="@mipmap/ic_launcher_round"', manifest, count=1)
+              manifest = re.sub(r'<application\b', '<application android:roundIcon="@mipmap/ic_launcher_round"', manifest, count=1)
           if 'android:icon="@mipmap/ic_launcher"' not in manifest or 'android:roundIcon="@mipmap/ic_launcher_round"' not in manifest:
               raise SystemExit('Could not configure launcher icon attributes')
           with open(p, 'w', encoding='utf-8') as f:
               f.write(manifest)
           print('Launcher icon attributes configured without rewriting XML namespaces')
           PY
-      - name: Sync Capacitor
-        run: npx cap sync android
       - name: Build debug APK
         run: |
           cd android
