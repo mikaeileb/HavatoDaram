@@ -1,0 +1,8 @@
+{
+  "appId": "com.mikaeileb.havatodaram",
+  "appName": "هواتو دارم",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
